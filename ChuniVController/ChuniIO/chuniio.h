@@ -19,20 +19,19 @@ typedef enum {
 	CABINET_TEST = 4,
 	CABINET_SERVICE = 5,
 	IR_BLOCKED = 6,
-	IR_UNBLOCKED = 7
+	IR_UNBLOCKED = 7,
+
+	BITMASK = 8,
+	SHUTDOWN = 9,
+	PING = 10,
+	PONG = 11,
 } chuni_msg_type_t;
 
 typedef struct {
 	uint8_t src;
 	uint8_t type;
 
-	// For SLIDER_*, IR_* and LED_SET. Index of the target SLIDER/LED/IR_SENSOR
-	uint8_t target;
-
-	// for LED_SET only
-	uint8_t led_color_r;
-	uint8_t led_color_g;
-	uint8_t led_color_b;
+	uint8_t data[4];
 } chuni_msg_t;
 
 typedef void (*chuni_io_slider_callback_t)(const uint8_t* state);
