@@ -1,6 +1,10 @@
-CHUNIIO (Heavily Korrected)
+CHUNIIO
 ====
 This module is based on this project https://github.com/Nat-Lab/chunithm-vcontroller
+
+Notice, that this module is backward-compactable with the original project.
+
+I just added some extra protocols.
 
 What's the difference?
 ----
