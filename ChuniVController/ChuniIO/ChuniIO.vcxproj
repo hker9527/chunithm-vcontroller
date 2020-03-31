@@ -123,6 +123,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
     </Link>
+    <PostBuildEvent>
+      <Command>taskkill /f /im ChuniApp.exe
+@ping 127.0.0.1 -n 2 -w 1000 &gt; nul
+copy /Y $(OutDir)CHUNIIO.DLL $(LocalDebuggerWorkingDirectory)
+$(LocalDebuggerWorkingDirectory)start.bat</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
