@@ -26,8 +26,6 @@ static struct sockaddr_in remote;
 static bool remote_exist = false;
 static uint8_t chuni_sliders[32];
 
-using namespace std;
-
 HRESULT chuni_io_jvs_init(void)
 {
     // alloc console for debug output
@@ -264,7 +262,7 @@ static unsigned int __stdcall chuni_io_network_thread_proc(void* ctx) {
                             chuni_io_ir(i, set);
                         }
                     }
-                    catch (exception e) {
+                    catch (std::exception e) {
                         log_fatal("ERROR: %s", e.what());
                     }
                 }
@@ -289,7 +287,7 @@ static unsigned int __stdcall chuni_io_network_thread_proc(void* ctx) {
             }
         }
     }
-    catch (const exception& e) {
+    catch (const std::exception& e) {
         log_fatal("Error: %s", e.what());
     }
 }
