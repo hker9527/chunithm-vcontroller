@@ -1,4 +1,6 @@
-﻿#include <winsock2.h>
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS true
+
+#include <winsock2.h>
 #include <windows.h>
 #include <process.h>
 #include <stdio.h>
@@ -35,20 +37,20 @@ HRESULT chuni_io_jvs_init(void)
     FILE* fp;
     freopen_s(&fp, "CONOUT$", "w", stdout);
 
-    log_info("allocated debug console.\n");
+    log_info("allocated debug console.");
 
     struct sockaddr_in local;
     memset(&local, 0, sizeof(struct sockaddr_in));
 
     WSAData wsad;
     if (WSAStartup(MAKEWORD(2, 2), &wsad) != 0) {
-        log_error("WSAStartup failed.\n");
+        log_error("WSAStartup failed.");
         return S_FALSE;
     }
 
     chuni_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if (chuni_socket == INVALID_SOCKET) {
-        log_error("socket() failed.\n");
+        log_error("socket() failed.");
         return S_FALSE;
     }
 
@@ -57,7 +59,7 @@ HRESULT chuni_io_jvs_init(void)
     local.sin_port = htons(chuni_port);
 
     if (bind(chuni_socket, (struct sockaddr*) & local, sizeof(struct sockaddr_in)) == SOCKET_ERROR) {
-        log_error("bind() failed.\n");
+        log_error("bind() failed.");
         return S_FALSE;
     }
 
@@ -69,7 +71,7 @@ HRESULT chuni_io_jvs_init(void)
         0,
         NULL);
 
-    log_info("server socket initialization completed.\n");
+    log_info("server socket initialization completed.");
 
     return S_OK;
 }
@@ -111,13 +113,13 @@ void chuni_io_jvs_set_coin_blocker(bool open)
 
 HRESULT chuni_io_slider_init(void)
 {
-    log_info("init slider...\n");
+    log_info("init slider...");
     return S_OK;
 }
 
 void chuni_io_slider_start(chuni_io_slider_callback_t callback)
 {
-    log_info("starting slider...\n");
+    log_info("starting slider...");
     if (chuni_io_slider_thread != NULL) {
         return;
     }
@@ -133,7 +135,7 @@ void chuni_io_slider_start(chuni_io_slider_callback_t callback)
 
 void chuni_io_slider_stop(void)
 {
-    log_info("stopping slider...\n");
+    log_info("stopping slider...");
     if (chuni_io_slider_thread == NULL) {
         return;
     }
@@ -157,8 +159,8 @@ void chuni_io_slider_set_leds(const uint8_t* rgb)
     for (uint8_t i = 0; i < 96; i += 6) {
         if (rgb[i] != prev_rgb_status[i] || rgb[i + 1] != prev_rgb_status[i + 1] || rgb[i + 2] != prev_rgb_status[i + 2]) {
             uint8_t n = i / 6;
-            log_debug("SET_LED[%d]: rgb(%d, %d, %d)\n", n, rgb[i + 1], rgb[i + 2], rgb[i]);
-            if (!remote_exist) log_warn("remote does not exist.\n");
+            log_debug("SET_LED[%d]: rgb(%d, %d, %d)", n, rgb[i + 1], rgb[i + 2], rgb[i]);
+            if (!remote_exist) log_warn("remote does not exist.");
             else {
                 message.data[0] = n;
                 message.data[1] = rgb[i + 1];
@@ -190,9 +192,34 @@ void chuni_io_slider(uint8_t sensor, bool set) {
     chuni_sliders[sensor * 2 + 1] = set * 128;
 }
 
+
+// https://tangentsoft.net/wskfaq/examples/ipaddr.html
+void display_ip() {
+    char ac[80];
+    if (gethostname(ac, sizeof(ac)) == SOCKET_ERROR) {
+        log_error("Error %d when getting local host name.", WSAGetLastError());
+        return;
+    }
+
+    log_info("Host name is %s.", ac);
+
+    struct hostent* phe = gethostbyname(ac);
+    if (phe == 0) {
+        log_error("Yow! Bad host lookup.");
+        return;
+    }
+
+    for (int i = 0; phe->h_addr_list[i] != 0; ++i) {
+        struct in_addr addr;
+        memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
+        log_debug("Address %d: %s", i, inet_ntoa(addr));
+    }
+}
+
 static unsigned int __stdcall chuni_io_network_thread_proc(void* ctx) {
     try {
-        log_info("spinning up network event handler...\n");
+        display_ip();
+        log_info("spinning up network event handler...");
 
         static char recv_buf[32];
         int addr_sz = sizeof(struct sockaddr_in);
@@ -204,46 +231,46 @@ static unsigned int __stdcall chuni_io_network_thread_proc(void* ctx) {
                 const chuni_msg_t* msg = (const chuni_msg_t*)recv_buf;
                 
                 if (msg->src != SRC_CONTROLLER) {
-                    log_warn("got non-controller message.\n");
+                    log_warn("got non-controller message.");
                     continue;
                 }
                 switch (msg->type) {
                 case COIN_INSERT:
-                    log_info("adding coin.\n");
+                    log_info("adding coin.");
                     chuni_coin_pending = true;
                     break;
                 case SLIDER_PRESS:
-                    //log_debug("slider_press at %d.\n", msg->target);
-                    if (msg->data[0] >= 16) log_error("invalid slider value %d in SLIDER_PRESS.\n", msg->data[0]);
+                    //log_debug("slider_press at %d.", msg->target);
+                    if (msg->data[0] >= 16) log_error("invalid slider value %d in SLIDER_PRESS.", msg->data[0]);
                     else {
                         chuni_io_slider((msg->data[0]) * 2    , true);
                         chuni_io_slider((msg->data[0]) * 2 + 1, true);
                     }
                     break;
                 case SLIDER_RELEASE:
-                    //log_debug("slider released on %d.\n", msg->target);
-                    if (msg->data[0] >= 16) log_error("invalid slider value %d in SLIDER_RELEASE.\n", msg->data[0]);
+                    //log_debug("slider released on %d.", msg->target);
+                    if (msg->data[0] >= 16) log_error("invalid slider value %d in SLIDER_RELEASE.", msg->data[0]);
                     else {
                         chuni_io_slider((msg->data[0]) * 2    , false);
                         chuni_io_slider((msg->data[0]) * 2 + 1, false);
                     }
                     break;
                 case CABINET_TEST:
-                    log_info("setting cabinet_test.\n");
+                    log_info("setting cabinet_test.");
                     chuni_test_pending = true;
                     break;
                 case CABINET_SERVICE:
-                    log_info("setting cabinet_service.\n");
+                    log_info("setting cabinet_service.");
                     chuni_service_pending = true;
                     break;
                 case IR_BLOCKED:
-                    //log_debug("ir %d blokced.\n", msg->target);
-                    if (msg->data[0] >= 6) log_error("invalid slider value %d in IR_BLOCKED.\n", msg->data[0]);
+                    //log_debug("ir %d blokced.", msg->target);
+                    if (msg->data[0] >= 6) log_error("invalid slider value %d in IR_BLOCKED.", msg->data[0]);
                     else chuni_io_ir(msg->data[0], true);
                     break;
                 case IR_UNBLOCKED:
-                    //log_debug("ir %d unblokced.\n", msg->target);
-                    if (msg->data[0] >= 6) log_error("invalid slider value %d in IR_UNBLOCKED.\n", msg->data[0]);
+                    //log_debug("ir %d unblokced.", msg->target);
+                    if (msg->data[0] >= 6) log_error("invalid slider value %d in IR_UNBLOCKED.", msg->data[0]);
                     else chuni_io_ir(msg->data[0], false);
                     break;
                 case BITMASK: {
@@ -253,14 +280,14 @@ static unsigned int __stdcall chuni_io_network_thread_proc(void* ctx) {
                             for (uint8_t j = 0; j < 8; j++) {
                                 uint8_t index = 8 * i + j;
                                 bool set = checkBit(msg->data[i], j);
-                                // log_debug("Slider %d: %d\n", index, set);
-                                chuni_io_slider(15 - index, set);
+                                // log_debug("Slider %d: %d", index, set);
+                                chuni_io_slider(index, set);
                             }
                         }
 
                         for (uint8_t i = 0; i < 6; i++) {
                             bool set = checkBit(msg->data[2], i);
-                            // log_debug("Air %d: %d\n", i, set);
+                            // log_debug("Air %d: %d", i, set);
                             chuni_io_ir(i, set);
                         }
                     }
@@ -278,14 +305,15 @@ static unsigned int __stdcall chuni_io_network_thread_proc(void* ctx) {
                     message.type = PONG;
 
                     sendto(chuni_socket, (const char*)&message, sizeof(chuni_msg_t), 0, (const sockaddr*)&remote, sizeof(struct sockaddr_in));
+                    // log_debug("Client ping");
                 }
                     break;
                 default:
-                    log_error("bad message type %d.\n", msg->type);
+                    log_error("bad message type %d.", msg->type);
                 }
             }
             else if (len > 0) {
-                log_warn("got invalid packet of length %d.\n", len);
+                log_warn("got invalid packet of length %d.", len);
             }
         }
     }
